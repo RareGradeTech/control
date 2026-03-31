@@ -274,7 +274,11 @@
     </div>
 
     <script>
-        // --- FIREBASE INITIALIZATION ---
+        // --- CONFIGURATION ---
+        const API_BASE = "https://api.x.ai/v1";
+        let XAI_API_KEY = "";
+
+        // --- FIREBASE INITIALIZATION (Same as Ona AI Chat App) ---
         const firebaseConfig = {
             apiKey: "AIzaSyCh7Ute6LeSAxcNDEQwZg5m0cA4ujnLCfg",
             authDomain: "test-17881.firebaseapp.com",
@@ -286,38 +290,40 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const remoteConfig = firebase.remoteConfig();
-        remoteConfig.settings.minimumFetchIntervalMillis = 3600000;
+        
+        // Same settings as Ona AI chat app
+        remoteConfig.settings.minimumFetchIntervalMillis = 0;
 
-        let XAI_API_KEY = "";
-        let apiKeyLoaded = false;
-
-        // Fetch Remote Config for AI with better error handling
-        async function initAI() {
+        // Load API Key from Firebase Remote Config (Same pattern as Ona AI)
+        async function loadKey() {
             try {
                 await remoteConfig.fetchAndActivate();
                 XAI_API_KEY = remoteConfig.getValue('xai_api_key').asString();
                 
                 if (!XAI_API_KEY) {
-                    console.warn("API key not found in Remote Config");
-                    showApiWarning("API key not configured. AI features disabled.");
+                    console.warn("xAI API key not found in Remote Config");
+                    showApiWarning("AI not configured. Add 'xai_api_key' to Firebase Remote Config.");
                 } else {
-                    apiKeyLoaded = true;
-                    console.log("AI API key loaded successfully");
+                    console.log("xAI API key loaded successfully");
                 }
-            } catch (err) { 
-                console.error("Remote Config Error", err);
-                showApiWarning("Failed to load AI configuration.");
+            } catch (e) { 
+                console.error("Key Load Error", e);
+                showApiWarning("Failed to load AI configuration from Firebase.");
             }
         }
         
-        initAI();
+        // Load key immediately
+        loadKey();
 
         function showApiWarning(message) {
             const chatArea = document.getElementById('chatArea');
-            const warningDiv = document.createElement('div');
-            warningDiv.className = 'api-warning';
-            warningDiv.textContent = message;
-            chatArea.appendChild(warningDiv);
+            // Only add warning if not already present
+            if (!document.querySelector('.api-warning')) {
+                const warningDiv = document.createElement('div');
+                warningDiv.className = 'api-warning';
+                warningDiv.textContent = message;
+                chatArea.insertBefore(warningDiv, chatArea.firstChild);
+            }
         }
 
         // --- DASHBOARD LOGIC ---
@@ -403,7 +409,7 @@
             }
             
             if (!XAI_API_KEY) {
-                appendMsg("AI is not configured. Please check API key in Firebase Remote Config (parameter: 'xai_api_key').", 'ai');
+                appendMsg("AI is not configured. Please check that 'xai_api_key' is set in Firebase Remote Config.", 'ai');
                 return;
             }
 
@@ -414,7 +420,7 @@
             const thinking = appendMsg('<div class="spinner"></div>', 'ai');
 
             try {
-                const response = await fetch("https://api.x.ai/v1/chat/completions", {
+                const response = await fetch(`${API_BASE}/chat/completions`, {
                     method: "POST",
                     headers: {
                         "Authorization": `Bearer ${XAI_API_KEY}`,
@@ -422,7 +428,10 @@
                     },
                     body: JSON.stringify({
                         model: "grok-4-1-fast-non-reasoning",
-                        messages: [{ role: "system", content: "You are Ona AI on a user dashboard." }, { role: "user", content: text }]
+                        messages: [
+                            { role: "system", content: "You are Ona AI on a user dashboard." }, 
+                            { role: "user", content: text }
+                        ]
                     })
                 });
 
