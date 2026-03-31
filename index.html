@@ -3,17 +3,19 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>New Tab</title>
+    <title>Light Mode Dashboard</title>
     <style>
-        /* Chrome-like Dark Theme */
+        /* Chrome-like Light Theme */
         :root {
-            --bg-color: #202124;
-            --card-bg: #323639;
-            --card-hover: #3c4043;
-            --text-color: #e8eaed;
-            --secondary-text: #9aa0a6;
-            --accent: #8ab4f8;
-            --danger: #f28b82;
+            --bg-color: #f8f9fa;
+            --sidebar-bg: #ffffff;
+            --card-bg: #ffffff;
+            --card-hover: #f1f3f4;
+            --text-color: #202124;
+            --secondary-text: #5f6368;
+            --accent: #1a73e8; /* Standard Google Blue */
+            --danger: #ea4335;
+            --border-color: #dadce0;
         }
 
         body {
@@ -22,14 +24,58 @@
             color: var(--text-color);
             margin: 0;
             display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Layout */
+        .sidebar {
+            width: 240px;
+            background-color: var(--sidebar-bg);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            padding: 20px 0;
+        }
+
+        .sidebar h2 {
+            margin: 0 20px 20px 20px;
+            font-size: 18px;
+            color: var(--text-color);
+        }
+
+        .sidebar-menu {
+            list-style: none;
+            padding: 0;
+            margin: 0;
+        }
+
+        .sidebar-menu li {
+            padding: 12px 20px;
+            cursor: pointer;
+            color: var(--secondary-text);
+            font-weight: 500;
+            transition: background 0.2s, color 0.2s;
+        }
+
+        .sidebar-menu li:hover, .sidebar-menu li.active {
+            background-color: #e8f0fe;
+            color: var(--accent);
+        }
+
+        /* Main Content Area */
+        .main-content {
+            flex: 1;
+            display: flex;
             flex-direction: column;
             align-items: center;
-            padding-top: 8vh;
+            padding: 40px 20px;
+            overflow-y: auto;
         }
 
         .container {
-            width: 90%;
-            max-width: 800px;
+            width: 100%;
+            max-width: 900px;
         }
 
         /* Search / Input Area */
@@ -38,42 +84,45 @@
             gap: 12px;
             margin-bottom: 40px;
             justify-content: center;
-            background: rgba(255, 255, 255, 0.05);
+            background: var(--card-bg);
             padding: 20px;
             border-radius: 12px;
+            border: 1px solid var(--border-color);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         input {
             padding: 12px 16px;
             border-radius: 24px;
-            border: 1px solid #5f6368;
+            border: 1px solid var(--border-color);
             background: var(--bg-color);
             color: var(--text-color);
             outline: none;
             flex: 1;
             max-width: 250px;
             font-size: 14px;
-            transition: border-color 0.2s;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
         input:focus {
             border-color: var(--accent);
+            box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
         }
 
         button {
             padding: 12px 24px;
             background-color: var(--accent);
-            color: #202124;
+            color: white;
             border: none;
             border-radius: 24px;
             cursor: pointer;
             font-weight: bold;
             font-size: 14px;
-            transition: opacity 0.2s;
+            transition: background-color 0.2s;
         }
 
         button:hover {
-            opacity: 0.9;
+            background-color: #1557b0;
         }
 
         /* Grid & Cards */
@@ -95,17 +144,19 @@
             color: var(--text-color);
             position: relative;
             cursor: pointer;
-            transition: background-color 0.2s, transform 0.1s;
+            border: 1px solid var(--border-color);
+            transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
         }
 
         .card:hover {
             background-color: var(--card-hover);
-            transform: scale(1.02);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
-        /* Generates a quick initial based on the site name */
         .card-icon {
-            background-color: #5f6368;
+            background-color: var(--bg-color);
+            color: var(--secondary-text);
             width: 48px;
             height: 48px;
             border-radius: 50%;
@@ -115,6 +166,7 @@
             font-size: 20px;
             margin-bottom: 12px;
             font-weight: 500;
+            border: 1px solid var(--border-color);
         }
 
         .card-title {
@@ -128,21 +180,22 @@
         /* Delete Button */
         .delete-btn {
             position: absolute;
-            top: -6px;
-            right: -6px;
+            top: -8px;
+            right: -8px;
             background-color: var(--card-bg);
             color: var(--secondary-text);
-            border: 1px solid #5f6368;
+            border: 1px solid var(--border-color);
             border-radius: 50%;
-            width: 24px;
-            height: 24px;
+            width: 26px;
+            height: 26px;
             display: flex;
             align-items: center;
             justify-content: center;
-            font-size: 14px;
+            font-size: 16px;
             opacity: 0;
             padding: 0;
-            transition: opacity 0.2s, color 0.2s;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: opacity 0.2s, color 0.2s, border-color 0.2s;
         }
 
         .card:hover .delete-btn {
@@ -152,61 +205,98 @@
         .delete-btn:hover {
             color: var(--danger);
             border-color: var(--danger);
+            background-color: #fff;
         }
     </style>
 </head>
 <body>
 
-    <div class="container">
-        <div class="controls">
-            <input type="text" id="siteName" placeholder="Name (e.g. GitHub)" autocomplete="off">
-            <input type="text" id="siteUrl" placeholder="URL (e.g. github.com)" autocomplete="off">
-            <button onclick="addCard()">Add Shortcut</button>
-        </div>
+    <aside class="sidebar">
+        <h2>My Space</h2>
+        <ul class="sidebar-menu">
+            <li class="active">Shortcuts</li>
+            <li>To-Do List</li>
+            <li>Notes</li>
+            <li>Settings</li>
+        </ul>
+    </aside>
 
-        <div class="grid" id="grid">
+    <main class="main-content">
+        <div class="container">
+            <div class="controls">
+                <input type="text" id="siteName" placeholder="Name (e.g. GitHub)" autocomplete="off">
+                <input type="text" id="siteUrl" placeholder="URL (e.g. github.com)" autocomplete="off">
+                <button id="addCardBtn">Add Shortcut</button>
             </div>
-    </div>
 
-    <script>
-        // Initialize with some default cards if localStorage is empty
-        let cards = JSON.parse(localStorage.getItem('chromeCards')) || [
-            { name: 'Google', url: 'https://google.com' },
-            { name: 'YouTube', url: 'https://youtube.com' }
-        ];
+            <div class="grid" id="grid">
+                </div>
+        </div>
+    </main>
 
+    <script type="module">
+        // Import the functions you need from the SDKs you need
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getDatabase, ref, set, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
+
+        // Your web app's Firebase configuration
+        const firebaseConfig = {
+            apiKey: "AIzaSyCh7Ute6LeSAxcNDEQwZg5m0cA4ujnLCfg",
+            authDomain: "test-17881.firebaseapp.com",
+            databaseURL: "https://test-17881-default-rtdb.firebaseio.com",
+            projectId: "test-17881",
+            storageBucket: "test-17881.firebasestorage.app",
+            messagingSenderId: "1057428047643",
+            appId: "1:1057428047643:web:f3801c0d933225a5cd35be"
+        };
+
+        // Initialize Firebase
+        const app = initializeApp(firebaseConfig);
+        const db = getDatabase(app);
+        
+        // Database Reference for our cards
+        const cardsRef = ref(db, 'shortcuts');
+
+        // DOM Elements
         const grid = document.getElementById('grid');
         const nameInput = document.getElementById('siteName');
         const urlInput = document.getElementById('siteUrl');
+        const addBtn = document.getElementById('addCardBtn');
+
+        // Listen for data changes in Realtime Database
+        onValue(cardsRef, (snapshot) => {
+            const data = snapshot.val();
+            renderCards(data);
+        });
 
         // Render the cards to the screen
-        function renderCards() {
+        function renderCards(cardsData) {
             grid.innerHTML = '';
             
-            cards.forEach((card, index) => {
-                // Create the clickable link wrapper
+            if (!cardsData) return; // Exit if no data exists
+
+            // Iterate through the Firebase object keys
+            Object.keys(cardsData).forEach(key => {
+                const card = cardsData[key];
+                
                 const a = document.createElement('a');
                 a.className = 'card';
                 a.href = card.url;
                 
-                // Get the first letter for the icon
                 const initial = card.name.charAt(0).toUpperCase();
 
-                // Build the inner HTML
                 a.innerHTML = `
                     <div class="card-icon">${initial}</div>
                     <div class="card-title">${card.name}</div>
                 `;
 
-                // Create the delete button
                 const delBtn = document.createElement('button');
                 delBtn.className = 'delete-btn';
                 delBtn.innerHTML = '×';
                 
-                // Stop the link from opening when clicking the delete button
                 delBtn.onclick = (e) => {
                     e.preventDefault(); 
-                    deleteCard(index);
+                    deleteCard(key); // Pass the Firebase unique key
                 };
 
                 a.appendChild(delBtn);
@@ -214,7 +304,7 @@
             });
         }
 
-        // Add a new card
+        // Add a new card to Firebase
         function addCard() {
             const name = nameInput.value.trim();
             let url = urlInput.value.trim();
@@ -224,15 +314,16 @@
                 return;
             }
 
-            // Ensure the URL has http:// or https:// so it routes correctly
             if (!url.startsWith('http://') && !url.startsWith('https://')) {
                 url = 'https://' + url;
             }
 
-            // Add to array, save, and update UI
-            cards.push({ name, url });
-            saveData();
-            renderCards();
+            // Create a new unique key and set the data
+            const newCardRef = push(cardsRef);
+            set(newCardRef, {
+                name: name,
+                url: url
+            });
 
             // Clear inputs
             nameInput.value = '';
@@ -240,27 +331,20 @@
             nameInput.focus();
         }
 
-        // Delete a card
-        function deleteCard(index) {
-            cards.splice(index, 1);
-            saveData();
-            renderCards();
+        // Delete a card from Firebase
+        function deleteCard(key) {
+            const specificCardRef = ref(db, 'shortcuts/' + key);
+            remove(specificCardRef);
         }
 
-        // Save array to local storage
-        function saveData() {
-            localStorage.setItem('chromeCards', JSON.stringify(cards));
-        }
+        // Event Listeners
+        addBtn.addEventListener('click', addCard);
 
-        // Allow pressing "Enter" in the URL field to add the card
         urlInput.addEventListener('keypress', function(e) {
             if (e.key === 'Enter') {
                 addCard();
             }
         });
-
-        // Initial render on page load
-        renderCards();
     </script>
 </body>
 </html>
