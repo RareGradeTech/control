@@ -216,7 +216,7 @@
 
     <div class="ai-window" id="aiWindow">
         <div class="ai-header">
-            <span>Ona AI (Grok)</span>
+            <span>Ona AI</span>
             <span style="cursor:pointer" id="closeAi">×</span>
         </div>
         <div class="chat-area" id="chatArea">
@@ -313,7 +313,7 @@
                         "Content-Type": "application/json"
                     },
                     body: JSON.stringify({
-                        model: "grok-beta",
+                        model: "grok-4-1-fast-non-reasoning",
                         messages: [{ role: "system", content: "You are Ona AI on a user dashboard." }, { role: "user", content: text }]
                     })
                 });
