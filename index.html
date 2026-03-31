@@ -3,9 +3,9 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Light Mode Dashboard</title>
+    <title>Dashboard Pro</title>
     <style>
-        /* Chrome-like Light Theme */
+        /* CSS Variables for Theming */
         :root {
             --bg-color: #f8f9fa;
             --sidebar-bg: #ffffff;
@@ -14,13 +14,23 @@
             --text-color: #202124;
             --secondary-text: #5f6368;
             --accent: #1a73e8;
+            --accent-hover: #1557b0;
             --danger: #ea4335;
+            --danger-hover: #c5221f;
             --border-color: #dadce0;
-            --modal-bg: rgba(0, 0, 0, 0.65);
+            --modal-overlay: rgba(0, 0, 0, 0.4);
         }
 
-        * {
-            box-sizing: border-box;
+        /* Dark Mode Variables */
+        [data-theme="dark"] {
+            --bg-color: #202124;
+            --sidebar-bg: #2d2e30;
+            --card-bg: #3c4043;
+            --card-hover: #4a4d51;
+            --text-color: #e8eaed;
+            --secondary-text: #9aa0a6;
+            --border-color: #5f6368;
+            --modal-overlay: rgba(0, 0, 0, 0.7);
         }
 
         body {
@@ -31,150 +41,165 @@
             display: flex;
             height: 100vh;
             overflow: hidden;
+            transition: background-color 0.3s, color 0.3s;
         }
 
-        /* Sidebar */
+        /* Expandable Sidebar Layout */
         .sidebar {
-            width: 260px;
+            width: 70px; /* Collapsed width */
             background-color: var(--sidebar-bg);
             border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
-            padding: 24px 0;
-            box-shadow: 2px 0 10px rgba(0,0,0,0.06);
+            padding: 20px 0;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            overflow: hidden;
+            white-space: nowrap;
+            z-index: 10;
+        }
+
+        .sidebar:hover {
+            width: 240px; /* Expanded width */
+            box-shadow: 4px 0 10px rgba(0,0,0,0.05);
         }
 
         .sidebar h2 {
-            margin: 0 24px 32px 24px;
-            font-size: 22px;
-            font-weight: 600;
+            margin: 0 20px 20px 20px;
+            font-size: 18px;
             color: var(--text-color);
-            letter-spacing: -0.5px;
+            opacity: 0; /* Hidden when collapsed */
+            transition: opacity 0.2s;
+        }
+
+        .sidebar:hover h2 {
+            opacity: 1; /* Visible when expanded */
         }
 
         .sidebar-menu {
             list-style: none;
             padding: 0;
             margin: 0;
-            flex: 1;
         }
 
         .sidebar-menu li {
-            padding: 14px 24px;
+            padding: 12px 20px;
             cursor: pointer;
             color: var(--secondary-text);
             font-weight: 500;
-            transition: all 0.2s ease;
+            transition: background 0.2s, color 0.2s;
             display: flex;
             align-items: center;
-            gap: 16px;
-            font-size: 15px;
         }
 
-        .sidebar-menu li:hover,
-        .sidebar-menu li.active {
-            background-color: #e8f0fe;
+        .sidebar-menu li .icon {
+            font-size: 20px;
+            margin-right: 20px;
+            min-width: 24px;
+            text-align: center;
+        }
+
+        .sidebar-menu li .text {
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .sidebar:hover .sidebar-menu li .text {
+            opacity: 1;
+        }
+
+        .sidebar-menu li:hover, .sidebar-menu li.active {
+            background-color: rgba(26, 115, 232, 0.1);
             color: var(--accent);
         }
 
-        .sidebar-menu li svg {
-            width: 20px;
-            height: 20px;
-            fill: currentColor;
-            flex-shrink: 0;
-        }
-
-        /* Main Content */
+        /* Main Content Area */
         .main-content {
             flex: 1;
             display: flex;
             flex-direction: column;
-            padding: 40px 40px;
+            align-items: center;
+            padding: 40px 20px;
             overflow-y: auto;
+            position: relative;
+        }
+
+        .top-bar {
+            width: 100%;
+            max-width: 900px;
+            display: flex;
+            justify-content: flex-end;
+            margin-bottom: 20px;
         }
 
         .container {
             width: 100%;
-            max-width: 1100px;
-            margin: 0 auto;
+            max-width: 900px;
         }
 
-        .header {
-            margin-bottom: 40px;
-        }
-
-        .header h1 {
-            font-size: 32px;
-            font-weight: 500;
-            margin: 0 0 6px 0;
-            letter-spacing: -0.8px;
-        }
-
-        .header p {
-            color: var(--secondary-text);
-            margin: 0;
-            font-size: 15.5px;
-        }
-
-        /* Controls */
+        /* Controls Area */
         .controls {
             display: flex;
-            gap: 14px;
-            margin-bottom: 48px;
+            flex-wrap: wrap;
+            gap: 12px;
+            margin-bottom: 40px;
+            justify-content: center;
             background: var(--card-bg);
-            padding: 28px;
-            border-radius: 20px;
+            padding: 20px;
+            border-radius: 12px;
             border: 1px solid var(--border-color);
-            box-shadow: 0 4px 12px rgba(0,0,0,0.07);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.05);
         }
 
         input {
-            padding: 16px 22px;
-            border-radius: 9999px;
+            padding: 12px 16px;
+            border-radius: 24px;
             border: 1px solid var(--border-color);
             background: var(--bg-color);
             color: var(--text-color);
             outline: none;
-            font-size: 15px;
-            transition: all 0.25s;
+            flex: 1;
+            min-width: 150px;
+            max-width: 200px;
+            font-size: 14px;
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
 
         input:focus {
             border-color: var(--accent);
-            box-shadow: 0 0 0 4px rgba(26, 115, 232, 0.18);
+            box-shadow: 0 0 0 2px rgba(26, 115, 232, 0.2);
         }
 
-        #siteName { flex: 1; max-width: 300px; }
-        #siteUrl { flex: 1; max-width: 420px; }
-
         button {
-            padding: 16px 32px;
+            padding: 12px 24px;
             background-color: var(--accent);
             color: white;
             border: none;
-            border-radius: 9999px;
+            border-radius: 24px;
             cursor: pointer;
-            font-weight: 600;
-            font-size: 15px;
+            font-weight: bold;
+            font-size: 14px;
             transition: background-color 0.2s;
-            white-space: nowrap;
         }
 
-        button:hover {
-            background-color: #1557b0;
-        }
+        button:hover { background-color: var(--accent-hover); }
+        button.secondary { background-color: transparent; border: 1px solid var(--border-color); color: var(--text-color); }
+        button.secondary:hover { background-color: var(--card-hover); }
+        button.danger { background-color: var(--danger); }
+        button.danger:hover { background-color: var(--danger-hover); }
 
-        /* Grid */
+        /* Grid & Cards */
         .grid {
             display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(148px, 1fr));
-            gap: 28px;
+            grid-template-columns: repeat(auto-fill, minmax(130px, 1fr));
+            gap: 24px;
+            position: relative;
+            min-height: 200px;
         }
 
         .card {
             background-color: var(--card-bg);
-            border-radius: 20px;
-            height: 148px;
+            border-radius: 12px;
+            height: 110px;
             display: flex;
             flex-direction: column;
             align-items: center;
@@ -184,249 +209,197 @@
             position: relative;
             cursor: pointer;
             border: 1px solid var(--border-color);
-            transition: all 0.3s cubic-bezier(0.4, 0.0, 0.2, 1);
+            transition: background-color 0.2s, transform 0.1s, box-shadow 0.2s;
         }
 
         .card:hover {
             background-color: var(--card-hover);
-            transform: translateY(-6px);
-            box-shadow: 0 12px 24px rgba(0,0,0,0.14);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
         }
 
         .card-icon {
             background-color: var(--bg-color);
             color: var(--secondary-text);
-            width: 62px;
-            height: 62px;
+            width: 48px;
+            height: 48px;
             border-radius: 50%;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            font-size: 28px;
-            font-weight: 600;
-            margin-bottom: 16px;
-            border: 1px solid var(--border-color);
-        }
-
-        .card-title {
-            font-size: 14.5px;
-            font-weight: 500;
-            white-space: nowrap;
-            overflow: hidden;
-            text-overflow: ellipsis;
-            max-width: 120px;
-        }
-
-        .delete-btn {
-            position: absolute;
-            top: -10px;
-            right: -10px;
-            background-color: var(--card-bg);
-            color: var(--secondary-text);
-            border: 2px solid var(--border-color);
-            border-radius: 50%;
-            width: 30px;
-            height: 30px;
             display: flex;
             align-items: center;
             justify-content: center;
             font-size: 20px;
-            font-weight: bold;
+            margin-bottom: 12px;
+            font-weight: 500;
+            border: 1px solid var(--border-color);
+        }
+
+        .card-title {
+            font-size: 13px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            max-width: 90%;
+        }
+
+        /* Delete Button */
+        .delete-btn {
+            position: absolute;
+            top: -8px;
+            right: -8px;
+            background-color: var(--card-bg);
+            color: var(--secondary-text);
+            border: 1px solid var(--border-color);
+            border-radius: 50%;
+            width: 26px;
+            height: 26px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 16px;
             opacity: 0;
-            transition: all 0.2s;
-            box-shadow: 0 4px 10px rgba(0,0,0,0.15);
+            padding: 0;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+            transition: opacity 0.2s, color 0.2s, border-color 0.2s;
         }
 
-        .card:hover .delete-btn {
-            opacity: 1;
+        .card:hover .delete-btn { opacity: 1; }
+        .delete-btn:hover { color: var(--danger); border-color: var(--danger); background-color: #fff; }
+
+        /* --- NEW FEATURES CSS --- */
+
+        /* Spinner */
+        .loader {
+            border: 4px solid var(--card-bg);
+            border-top: 4px solid var(--accent);
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            animation: spin 1s linear infinite;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
         }
 
-        .delete-btn:hover {
-            color: var(--danger);
-            border-color: var(--danger);
-            background-color: white;
+        @keyframes spin {
+            0% { transform: translate(-50%, -50%) rotate(0deg); }
+            100% { transform: translate(-50%, -50%) rotate(360deg); }
         }
 
         /* Custom Modal */
-        .modal {
-            display: none;
+        .modal-overlay {
             position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            background-color: var(--modal-bg);
-            z-index: 1000;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background-color: var(--modal-overlay);
+            display: flex;
             align-items: center;
             justify-content: center;
+            opacity: 0;
+            visibility: hidden;
+            transition: opacity 0.2s;
+            z-index: 100;
+        }
+
+        .modal-overlay.active {
+            opacity: 1;
+            visibility: visible;
         }
 
         .modal-content {
-            background: white;
-            border-radius: 20px;
-            width: 100%;
-            max-width: 440px;
-            box-shadow: 0 25px 50px rgba(0,0,0,0.3);
-            overflow: hidden;
-        }
-
-        .modal-header {
-            padding: 24px 32px;
-            border-bottom: 1px solid var(--border-color);
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-        }
-
-        .modal-header h3 {
-            margin: 0;
-            font-size: 21px;
-            font-weight: 600;
-        }
-
-        .modal-body {
-            padding: 32px;
-        }
-
-        .modal-footer {
-            padding: 24px 32px;
-            border-top: 1px solid var(--border-color);
-            display: flex;
-            gap: 12px;
-            justify-content: flex-end;
-        }
-
-        .modal input {
-            width: 100%;
-            padding: 16px 20px;
-            margin-bottom: 18px;
-            border-radius: 9999px;
+            background-color: var(--card-bg);
+            padding: 24px;
+            border-radius: 12px;
+            width: 300px;
+            box-shadow: 0 4px 20px rgba(0,0,0,0.15);
+            text-align: center;
             border: 1px solid var(--border-color);
-            font-size: 15px;
+            transform: translateY(20px);
+            transition: transform 0.2s;
         }
 
-        .modal input:focus {
-            border-color: var(--accent);
-            box-shadow: 0 0 0 3px rgba(26,115,232,0.15);
+        .modal-overlay.active .modal-content {
+            transform: translateY(0);
         }
 
-        /* Custom Alert */
-        .custom-alert {
-            display: none;
+        .modal-actions {
+            margin-top: 20px;
+            display: flex;
+            justify-content: center;
+            gap: 12px;
+        }
+
+        /* Custom Toast Notification */
+        .toast {
             position: fixed;
-            top: 24px;
+            bottom: -50px;
             left: 50%;
             transform: translateX(-50%);
-            background: #202124;
-            color: white;
-            padding: 16px 32px;
-            border-radius: 9999px;
-            box-shadow: 0 12px 32px rgba(0,0,0,0.25);
-            z-index: 2000;
-            font-size: 15px;
-            max-width: 360px;
-            text-align: center;
-            animation: slideDown 0.3s ease forwards;
+            background-color: var(--text-color);
+            color: var(--bg-color);
+            padding: 12px 24px;
+            border-radius: 24px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.2);
+            transition: bottom 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            z-index: 50;
+            font-size: 14px;
+            font-weight: 500;
         }
 
-        @keyframes slideDown {
-            from { transform: translate(-50%, -40px); opacity: 0; }
-            to { transform: translateX(-50%); opacity: 1; }
+        .toast.show {
+            bottom: 30px;
         }
     </style>
 </head>
 <body>
-    <!-- Sidebar -->
+
     <aside class="sidebar">
         <h2>My Space</h2>
         <ul class="sidebar-menu">
-            <li class="active" data-page="shortcuts">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-                Shortcuts
-            </li>
-            <li data-page="notes">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8l-6-6z"/><path d="M14 2v6h6"/></svg>
-                Notes
-            </li>
-            <li data-page="settings">
-                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24"><path d="M19.43 12.98c.04-.32.07-.64.07-.98s-.03-.66-.07-.98l2.11-1.65c.19-.15.24-.42.12-.64l-2-3.46c-.12-.22-.39-.3-.61-.22l-2.49 1c-.52-.4-1.08-.73-1.69-.93l-.38-2.65C14.46 2.18 14.25 2 14 2h-4c-.25 0-.46.18-.49.43l-.38 2.65c-.61.2-1.17.53-1.69.93l-2.49-1c-.22-.08-.49 0-.61.22l-2 3.46c-.13.22-.07.49.12.64l2.11 1.65c-.04.32-.07.65-.07.98s.03.66.07.98l-2.11 1.65c-.19.15-.24.42-.12.64l2 3.46c.12.22.39.3.61.22l2.49-1c.52.4 1.08.73 1.69.93l.38 2.65c.03.26.24.43.49.43h4c.25 0 .46-.18.49-.43l.38-2.65c.61-.2 1.17-.53 1.69-.93l2.49 1c.22.08.49 0 .61-.22l2-3.46c.12-.22.07-.49-.12-.64l-2.11-1.65zM12 15.5c-1.93 0-3.5-1.57-3.5-3.5s1.57-3.5 3.5-3.5 3.5 1.57 3.5 3.5-1.57 3.5-3.5 3.5z"/></svg>
-                Settings
-            </li>
+            <li class="active"><span class="icon">📌</span><span class="text">Shortcuts</span></li>
+            <li><span class="icon">✅</span><span class="text">To-Do List</span></li>
+            <li><span class="icon">📝</span><span class="text">Notes</span></li>
+            <li><span class="icon">⚙️</span><span class="text">Settings</span></li>
         </ul>
     </aside>
 
-    <!-- Main Content -->
     <main class="main-content">
+        <div class="top-bar">
+            <button id="themeToggle" class="secondary">🌙 Dark Mode</button>
+        </div>
+
         <div class="container">
-            <!-- Shortcuts Page -->
-            <div id="shortcuts-page" class="page active">
-                <div class="header">
-                    <h1>Shortcuts</h1>
-                    <p>Quick access to your favorite websites</p>
-                </div>
-
-                <div class="controls">
-                    <input type="text" id="siteName" placeholder="Name (e.g. GitHub)" autocomplete="off">
-                    <input type="text" id="siteUrl" placeholder="URL (e.g. github.com)" autocomplete="off">
-                    <button id="addCardBtn">Add Shortcut</button>
-                </div>
-
-                <div class="grid" id="grid"></div>
+            <div class="controls">
+                <input type="text" id="searchInput" placeholder="🔍 Search shortcuts..." autocomplete="off">
+                <input type="text" id="siteName" placeholder="Name (e.g. GitHub)" autocomplete="off">
+                <input type="text" id="siteUrl" placeholder="URL (e.g. github.com)" autocomplete="off">
+                <button id="addCardBtn">Add Shortcut</button>
             </div>
 
-            <!-- Notes Page -->
-            <div id="notes-page" class="page">
-                <div class="header">
-                    <h1>Notes</h1>
-                    <p>Your quick thoughts and ideas</p>
+            <div class="grid" id="grid">
+                <div class="loader" id="loader"></div>
                 </div>
-                <div style="text-align:center; padding:120px 20px; color:#5f6368;">
-                    <h2>📝 Notes</h2>
-                    <p>Notes feature coming soon.</p>
-                </div>
-            </div>
-
-            <!-- Settings Page -->
-            <div id="settings-page" class="page">
-                <div class="header">
-                    <h1>Settings</h1>
-                    <p>Customize your experience</p>
-                </div>
-                <div style="text-align:center; padding:120px 20px; color:#5f6368;">
-                    <h2>⚙️ Settings</h2>
-                    <p>Theme options and preferences coming soon.</p>
-                </div>
-            </div>
         </div>
     </main>
 
-    <!-- Custom Modal -->
-    <div id="modal" class="modal">
+    <div id="deleteModal" class="modal-overlay">
         <div class="modal-content">
-            <div class="modal-header">
-                <h3 id="modal-title">Add New Shortcut</h3>
-                <span onclick="closeModal()" style="cursor:pointer; font-size:28px; color:#5f6368; line-height:1;">×</span>
-            </div>
-            <div class="modal-body">
-                <input type="text" id="modal-name" placeholder="Shortcut Name">
-                <input type="text" id="modal-url" placeholder="https://example.com">
-            </div>
-            <div class="modal-footer">
-                <button onclick="closeModal()" style="background:#dadce0; color:#202124; padding:14px 28px;">Cancel</button>
-                <button onclick="saveFromModal()" id="modal-save-btn">Add Shortcut</button>
+            <h3 style="margin-top: 0;">Delete Shortcut?</h3>
+            <p style="color: var(--secondary-text); font-size: 14px;">This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button id="cancelDeleteBtn" class="secondary">Cancel</button>
+                <button id="confirmDeleteBtn" class="danger">Delete</button>
             </div>
         </div>
     </div>
 
-    <!-- Custom Alert -->
-    <div id="custom-alert" class="custom-alert"></div>
+    <div id="toast" class="toast">Message here</div>
 
     <script type="module">
-        // Firebase imports
+        // Import Firebase
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getDatabase, ref, set, onValue, push, remove } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-database.js";
 
-        // Firebase configuration
+        // Your Firebase config
         const firebaseConfig = {
             apiKey: "AIzaSyCh7Ute6LeSAxcNDEQwZg5m0cA4ujnLCfg",
             authDomain: "test-17881.firebaseapp.com",
@@ -437,7 +410,6 @@
             appId: "1:1057428047643:web:f3801c0d933225a5cd35be"
         };
 
-        // Initialize Firebase
         const app = initializeApp(firebaseConfig);
         const db = getDatabase(app);
         const cardsRef = ref(db, 'shortcuts');
@@ -446,109 +418,60 @@
         const grid = document.getElementById('grid');
         const nameInput = document.getElementById('siteName');
         const urlInput = document.getElementById('siteUrl');
+        const searchInput = document.getElementById('searchInput');
         const addBtn = document.getElementById('addCardBtn');
+        const loader = document.getElementById('loader');
+        
+        // Modal & Toast Elements
+        const deleteModal = document.getElementById('deleteModal');
+        const cancelDeleteBtn = document.getElementById('cancelDeleteBtn');
+        const confirmDeleteBtn = document.getElementById('confirmDeleteBtn');
+        const toast = document.getElementById('toast');
+        const themeToggle = document.getElementById('themeToggle');
 
-        // Modal elements
-        const modal = document.getElementById('modal');
-        const modalName = document.getElementById('modal-name');
-        const modalUrl = document.getElementById('modal-url');
-        const modalTitle = document.getElementById('modal-title');
-        const modalSaveBtn = document.getElementById('modal-save-btn');
+        let globalCardsData = null; // Store data locally for searching
+        let cardKeyToDelete = null; // Store key pending deletion
 
-        let currentEditingKey = null;
-
-        // Show custom alert
-        function showAlert(message, duration = 2800) {
-            const alertBox = document.getElementById('custom-alert');
-            alertBox.textContent = message;
-            alertBox.style.display = 'block';
-            
+        // Custom Toast Function
+        function showToast(message) {
+            toast.innerText = message;
+            toast.classList.add('show');
             setTimeout(() => {
-                alertBox.style.opacity = '0';
-                setTimeout(() => {
-                    alertBox.style.display = 'none';
-                    alertBox.style.opacity = '1';
-                }, 300);
-            }, duration);
+                toast.classList.remove('show');
+            }, 3000);
         }
 
-        // Show modal
-        function showModal(isEdit = false, name = '', url = '', key = null) {
-            modal.style.display = 'flex';
-            modalName.value = name;
-            modalUrl.value = url;
-            currentEditingKey = key;
+        // Realtime Listener
+        onValue(cardsRef, (snapshot) => {
+            loader.style.display = 'none'; // Hide spinner when data arrives
+            globalCardsData = snapshot.val();
+            renderCards(globalCardsData);
+        });
 
-            if (isEdit) {
-                modalTitle.textContent = 'Edit Shortcut';
-                modalSaveBtn.textContent = 'Save Changes';
-            } else {
-                modalTitle.textContent = 'Add New Shortcut';
-                modalSaveBtn.textContent = 'Add Shortcut';
-            }
-            
-            setTimeout(() => modalName.focus(), 100);
-        }
-
-        // Close modal
-        function closeModal() {
-            modal.style.display = 'none';
-            currentEditingKey = null;
-            modalName.value = '';
-            modalUrl.value = '';
-        }
-
-        // Save from modal
-        function saveFromModal() {
-            const name = modalName.value.trim();
-            let url = modalUrl.value.trim();
-
-            if (!name || !url) {
-                showAlert('Please enter both name and URL');
-                return;
-            }
-
-            if (!url.startsWith('http://') && !url.startsWith('https://')) {
-                url = 'https://' + url;
-            }
-
-            if (currentEditingKey) {
-                const updateRef = ref(db, 'shortcuts/' + currentEditingKey);
-                set(updateRef, { name: name, url: url });
-                showAlert('Shortcut updated successfully!');
-            } else {
-                const newCardRef = push(cardsRef);
-                set(newCardRef, { name: name, url: url });
-                showAlert('Shortcut added successfully!');
-            }
-
-            closeModal();
-        }
-
-        // Render cards
-        function renderCards(cardsData) {
+        // Render logic
+        function renderCards(cardsData, searchTerm = "") {
             grid.innerHTML = '';
-
+            
             if (!cardsData) {
-                const empty = document.createElement('div');
-                empty.style.gridColumn = '1 / -1';
-                empty.style.textAlign = 'center';
-                empty.style.padding = '80px 20px';
-                empty.style.color = '#5f6368';
-                empty.innerHTML = `<p>No shortcuts yet.<br>Add your first one using the form above.</p>`;
-                grid.appendChild(empty);
+                grid.innerHTML = '<p style="text-align:center; width:100%; color: var(--secondary-text);">No shortcuts yet!</p>';
                 return;
             }
+
+            const term = searchTerm.toLowerCase();
 
             Object.keys(cardsData).forEach(key => {
                 const card = cardsData[key];
-
+                
+                // Search Filter Logic
+                if (term && !card.name.toLowerCase().includes(term)) {
+                    return; // skip if doesn't match search
+                }
+                
                 const a = document.createElement('a');
                 a.className = 'card';
                 a.href = card.url;
-                a.target = "_blank";
-                a.rel = "noopener";
-
+                a.target = '_blank'; // Open in new tab
+                
                 const initial = card.name.charAt(0).toUpperCase();
 
                 a.innerHTML = `
@@ -559,39 +482,24 @@
                 const delBtn = document.createElement('button');
                 delBtn.className = 'delete-btn';
                 delBtn.innerHTML = '×';
+                
                 delBtn.onclick = (e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    if (confirm(`Delete "${card.name}"?\nThis cannot be undone.`)) {
-                        deleteCard(key);
-                    }
+                    e.preventDefault(); 
+                    openDeleteModal(key);
                 };
+
                 a.appendChild(delBtn);
-
-                // Double click to edit
-                a.ondblclick = (e) => {
-                    e.preventDefault();
-                    showModal(true, card.name, card.url, key);
-                };
-
                 grid.appendChild(a);
             });
         }
 
-        // Delete card
-        function deleteCard(key) {
-            const specificCardRef = ref(db, 'shortcuts/' + key);
-            remove(specificCardRef);
-            showAlert('Shortcut deleted');
-        }
-
-        // Add card from main inputs
+        // Add Card
         function addCard() {
             const name = nameInput.value.trim();
             let url = urlInput.value.trim();
 
             if (!name || !url) {
-                showAlert('Please enter both a name and a URL.');
+                showToast('⚠️ Please enter both a name and a URL.');
                 return;
             }
 
@@ -605,61 +513,55 @@
             nameInput.value = '';
             urlInput.value = '';
             nameInput.focus();
-
-            showAlert('Shortcut added successfully!');
+            showToast('✅ Shortcut added!');
         }
 
-        // Sidebar navigation
-        function setupSidebar() {
-            const menuItems = document.querySelectorAll('.sidebar-menu li');
-            const pages = document.querySelectorAll('.page');
-
-            menuItems.forEach(item => {
-                item.addEventListener('click', () => {
-                    menuItems.forEach(li => li.classList.remove('active'));
-                    pages.forEach(page => page.classList.remove('active'));
-
-                    item.classList.add('active');
-                    const pageId = item.getAttribute('data-page');
-                    document.getElementById(pageId + '-page').classList.add('active');
-                });
-            });
-        }
-
-        // Firebase real-time listener
-        onValue(cardsRef, (snapshot) => {
-            const data = snapshot.val();
-            renderCards(data);
+        // Search Input Listener
+        searchInput.addEventListener('input', (e) => {
+            renderCards(globalCardsData, e.target.value);
         });
 
-        // Event Listeners
-        function initEventListeners() {
-            addBtn.addEventListener('click', addCard);
-
-            urlInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') addCard();
-            });
-
-            nameInput.addEventListener('keypress', (e) => {
-                if (e.key === 'Enter') urlInput.focus();
-            });
-
-            // Close modal when clicking outside
-            modal.addEventListener('click', (e) => {
-                if (e.target === modal) closeModal();
-            });
+        // Modal Logic
+        function openDeleteModal(key) {
+            cardKeyToDelete = key;
+            deleteModal.classList.add('active');
         }
 
-        // Initialize app
-        function initialize() {
-            setupSidebar();
-            initEventListeners();
-            document.getElementById('shortcuts-page').classList.add('active');
-            
-            console.log('%c✅ Dashboard ready with clean SVG icons and removed To-Do feature!', 'color:#1a73e8; font-weight:600');
+        function closeDeleteModal() {
+            cardKeyToDelete = null;
+            deleteModal.classList.remove('active');
         }
 
-        initialize();
+        cancelDeleteBtn.addEventListener('click', closeDeleteModal);
+
+        confirmDeleteBtn.addEventListener('click', () => {
+            if (cardKeyToDelete) {
+                const specificCardRef = ref(db, 'shortcuts/' + cardKeyToDelete);
+                remove(specificCardRef);
+                showToast('🗑️ Shortcut deleted.');
+                closeDeleteModal();
+            }
+        });
+
+        // Add Event Listeners
+        addBtn.addEventListener('click', addCard);
+
+        urlInput.addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') addCard();
+        });
+
+        // Dark Mode Toggle
+        let isDarkMode = false;
+        themeToggle.addEventListener('click', () => {
+            isDarkMode = !isDarkMode;
+            if (isDarkMode) {
+                document.documentElement.setAttribute('data-theme', 'dark');
+                themeToggle.innerText = '☀️ Light Mode';
+            } else {
+                document.documentElement.removeAttribute('data-theme');
+                themeToggle.innerText = '🌙 Dark Mode';
+            }
+        });
     </script>
 </body>
 </html>
