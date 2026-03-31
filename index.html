@@ -136,6 +136,34 @@
             border: 1px solid var(--border-color);
         }
 
+        /* Delete button on cards */
+        .delete-btn {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            width: 24px;
+            height: 24px;
+            border-radius: 50%;
+            background: var(--danger);
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            opacity: 0;
+            transition: opacity 0.2s;
+        }
+
+        .card:hover .delete-btn {
+            opacity: 1;
+        }
+
+        .delete-btn:hover {
+            transform: scale(1.1);
+        }
+
         /* --- AI FLOATING WIDGET --- */
         .ai-fab {
             position: fixed; bottom: 30px; right: 30px;
@@ -168,6 +196,23 @@
         .bubble.ai { background: var(--bg-color); border: 1px solid var(--border-color); align-self: flex-start; }
 
         .ai-input-area { padding: 15px; border-top: 1px solid var(--border-color); display: flex; gap: 8px; }
+
+        /* API Key warning */
+        .api-warning {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px;
+            border-radius: 8px;
+            font-size: 12px;
+            margin-bottom: 10px;
+            border: 1px solid #ffeaa7;
+        }
+
+        [data-theme="dark"] .api-warning {
+            background: #3d3a2a;
+            color: #ffd93d;
+            border-color: #5d5a3a;
+        }
 
         /* Loader */
         .spinner { width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 1s infinite linear; }
@@ -244,44 +289,99 @@
         remoteConfig.settings.minimumFetchIntervalMillis = 3600000;
 
         let XAI_API_KEY = "";
+        let apiKeyLoaded = false;
 
-        // Fetch Remote Config for AI
+        // Fetch Remote Config for AI with better error handling
         async function initAI() {
             try {
                 await remoteConfig.fetchAndActivate();
                 XAI_API_KEY = remoteConfig.getValue('xai_api_key').asString();
-            } catch (err) { console.error("Remote Config Error", err); }
+                
+                if (!XAI_API_KEY) {
+                    console.warn("API key not found in Remote Config");
+                    showApiWarning("API key not configured. AI features disabled.");
+                } else {
+                    apiKeyLoaded = true;
+                    console.log("AI API key loaded successfully");
+                }
+            } catch (err) { 
+                console.error("Remote Config Error", err);
+                showApiWarning("Failed to load AI configuration.");
+            }
         }
+        
         initAI();
+
+        function showApiWarning(message) {
+            const chatArea = document.getElementById('chatArea');
+            const warningDiv = document.createElement('div');
+            warningDiv.className = 'api-warning';
+            warningDiv.textContent = message;
+            chatArea.appendChild(warningDiv);
+        }
 
         // --- DASHBOARD LOGIC ---
         const grid = document.getElementById('grid');
+        
+        // Render cards with delete buttons
         db.ref('shortcuts').on('value', snap => {
             grid.innerHTML = '';
             const data = snap.val();
             if (data) {
                 Object.keys(data).forEach(key => {
                     const item = data[key];
-                    const card = document.createElement('a');
-                    card.className = 'card';
-                    card.href = item.url;
-                    card.target = "_blank";
-                    card.innerHTML = `
+                    
+                    // Create card container
+                    const cardContainer = document.createElement('div');
+                    cardContainer.className = 'card';
+                    
+                    // Delete button
+                    const deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'delete-btn';
+                    deleteBtn.innerHTML = '×';
+                    deleteBtn.title = 'Delete shortcut';
+                    deleteBtn.onclick = (e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        if (confirm(`Delete "${item.name}"?`)) {
+                            db.ref('shortcuts/' + key).remove()
+                                .then(() => console.log('Deleted:', key))
+                                .catch(err => console.error('Delete error:', err));
+                        }
+                    };
+                    
+                    // Card content (clickable link area)
+                    const cardLink = document.createElement('a');
+                    cardLink.href = item.url;
+                    cardLink.target = "_blank";
+                    cardLink.style.textDecoration = 'none';
+                    cardLink.style.color = 'inherit';
+                    cardLink.style.display = 'block';
+                    cardLink.innerHTML = `
                         <div class="card-icon">${item.name[0].toUpperCase()}</div>
                         <div style="font-weight:600">${item.name}</div>
                     `;
-                    grid.appendChild(card);
+                    
+                    cardContainer.appendChild(deleteBtn);
+                    cardContainer.appendChild(cardLink);
+                    grid.appendChild(cardContainer);
                 });
             }
         });
 
         document.getElementById('addCardBtn').onclick = () => {
-            const name = document.getElementById('siteName').value;
-            const url = document.getElementById('siteUrl').value;
+            const name = document.getElementById('siteName').value.trim();
+            const url = document.getElementById('siteUrl').value.trim();
             if(name && url) {
-                db.ref('shortcuts').push({ name, url: url.includes('://') ? url : 'https://'+url });
-                document.getElementById('siteName').value = '';
-                document.getElementById('siteUrl').value = '';
+                const formattedUrl = url.includes('://') ? url : 'https://'+url;
+                db.ref('shortcuts').push({ name, url: formattedUrl })
+                    .then(() => {
+                        document.getElementById('siteName').value = '';
+                        document.getElementById('siteUrl').value = '';
+                    })
+                    .catch(err => alert('Error adding shortcut: ' + err.message));
+            } else {
+                alert('Please enter both name and URL');
             }
         };
 
@@ -297,7 +397,15 @@
 
         async function handleAiChat() {
             const text = aiInput.value.trim();
-            if (!text || !XAI_API_KEY) return;
+            
+            if (!text) {
+                return;
+            }
+            
+            if (!XAI_API_KEY) {
+                appendMsg("AI is not configured. Please check API key in Firebase Remote Config (parameter: 'xai_api_key').", 'ai');
+                return;
+            }
 
             appendMsg(text, 'user');
             aiInput.value = '';
@@ -318,11 +426,22 @@
                     })
                 });
 
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
                 const result = await response.json();
                 thinking.remove();
-                appendMsg(result.choices[0].message.content, 'ai');
+                
+                if (result.choices && result.choices[0] && result.choices[0].message) {
+                    appendMsg(result.choices[0].message.content, 'ai');
+                } else {
+                    appendMsg("Received unexpected response format.", 'ai');
+                }
             } catch (e) {
-                thinking.innerHTML = "Error connecting to Grok.";
+                thinking.remove();
+                console.error("AI API Error:", e);
+                appendMsg("Error: " + (e.message || "Failed to connect to AI service."), 'ai');
             }
         }
 
