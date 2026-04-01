@@ -3,14 +3,14 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Dashboard Pro + Ona AI</title>
+    <title>Chrome Browser Interface</title>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-app-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-database-compat.js"></script>
     <script src="https://www.gstatic.com/firebasejs/9.22.0/firebase-remote-config-compat.js"></script>
-    
+
     <style>
         :root {
-            --bg-color: #f8f9fa;
+            --bg-color: #f1f3f4;
             --sidebar-bg: #ffffff;
             --card-bg: #ffffff;
             --text-color: #202124;
@@ -18,8 +18,12 @@
             --accent: #1a73e8;
             --danger: #ea4335;
             --border-color: #dadce0;
-            --radius: 16px;
-            --shadow: 0 4px 12px rgba(0,0,0,0.05);
+            --toolbar-bg: #ffffff;
+            --tab-bg: #e8eaed;
+            --tab-active: #ffffff;
+            --address-bar-bg: #f1f3f4;
+            --radius: 8px;
+            --shadow: 0 2px 8px rgba(0,0,0,0.1);
         }
 
         [data-theme="dark"] {
@@ -29,175 +33,599 @@
             --text-color: #e2e2e6;
             --secondary-text: #909094;
             --border-color: #44474a;
+            --toolbar-bg: #2d2f33;
+            --tab-bg: #1a1c1e;
+            --tab-active: #2d2f33;
+            --address-bar-bg: #1a1c1e;
         }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; }
 
         body {
-            font-family: 'Segoe UI', system-ui, sans-serif;
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
             background-color: var(--bg-color);
             color: var(--text-color);
-            margin: 0;
-            display: flex;
             height: 100vh;
             overflow: hidden;
-            transition: 0.3s ease;
+            display: flex;
+            flex-direction: column;
         }
 
-        /* --- SIDEBAR --- */
+        /* --- CHROME TOOLBAR --- */
+        .chrome-toolbar {
+            background: var(--toolbar-bg);
+            border-bottom: 1px solid var(--border-color);
+            padding: 8px 12px;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+        }
+
+        /* Tabs */
+        .tabs-container {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+
+        .tabs-container::-webkit-scrollbar { display: none; }
+
+        .tab {
+            background: var(--tab-bg);
+            border-radius: 8px 8px 0 0;
+            padding: 8px 16px;
+            min-width: 120px;
+            max-width: 200px;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 12px;
+            position: relative;
+            border: 1px solid transparent;
+            border-bottom: none;
+            transition: 0.2s;
+        }
+
+        .tab.active {
+            background: var(--tab-active);
+            border-color: var(--border-color);
+        }
+
+        .tab:hover:not(.active) { background: rgba(128,128,128,0.1); }
+
+        .tab-favicon {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            background: var(--accent);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            color: white;
+            flex-shrink: 0;
+        }
+
+        .tab-title {
+            flex: 1;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .tab-close {
+            width: 16px;
+            height: 16px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            opacity: 0;
+            transition: 0.2s;
+        }
+
+        .tab:hover .tab-close { opacity: 1; }
+        .tab-close:hover { background: var(--danger); color: white; }
+
+        .new-tab-btn {
+            width: 28px;
+            height: 28px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            font-size: 18px;
+            color: var(--secondary-text);
+            transition: 0.2s;
+        }
+
+        .new-tab-btn:hover { background: rgba(128,128,128,0.1); color: var(--text-color); }
+
+        /* Navigation Bar */
+        .nav-bar {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        .nav-controls {
+            display: flex;
+            gap: 4px;
+        }
+
+        .nav-btn {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: none;
+            background: transparent;
+            color: var(--secondary-text);
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+
+        .nav-btn:hover:not(:disabled) { background: rgba(128,128,128,0.1); color: var(--text-color); }
+        .nav-btn:disabled { opacity: 0.3; cursor: not-allowed; }
+
+        .nav-btn svg { width: 18px; height: 18px; }
+
+        /* Address Bar */
+        .address-container {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            background: var(--address-bar-bg);
+            border-radius: 20px;
+            padding: 6px 16px;
+            border: 1px solid transparent;
+            transition: 0.2s;
+            position: relative;
+        }
+
+        .address-container:focus-within {
+            background: var(--card-bg);
+            border-color: var(--accent);
+            box-shadow: 0 0 0 3px rgba(26,115,232,0.1);
+        }
+
+        .address-icon {
+            width: 16px;
+            height: 16px;
+            margin-right: 12px;
+            color: var(--secondary-text);
+        }
+
+        .address-bar {
+            flex: 1;
+            border: none;
+            background: transparent;
+            color: var(--text-color);
+            font-size: 14px;
+            outline: none;
+        }
+
+        .address-bar::placeholder { color: var(--secondary-text); }
+
+        /* Search Engine Selector */
+        .search-engine-dropdown {
+            position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-top: 4px;
+            padding: 8px 0;
+            display: none;
+            box-shadow: var(--shadow);
+            z-index: 1000;
+        }
+
+        .search-engine-dropdown.active { display: block; }
+
+        .search-option {
+            padding: 8px 16px;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            font-size: 13px;
+        }
+
+        .search-option:hover { background: rgba(128,128,128,0.1); }
+
+        .search-option.active { background: rgba(26,115,232,0.1); color: var(--accent); }
+
+        .search-icon {
+            width: 16px;
+            height: 16px;
+            border-radius: 3px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 10px;
+            font-weight: bold;
+        }
+
+        .google-icon { background: #4285f4; color: white; }
+        .duck-icon { background: #de5833; color: white; }
+        .bing-icon { background: #008373; color: white; }
+
+        /* --- MAIN CONTENT AREA --- */
+        .main-container {
+            flex: 1;
+            display: flex;
+            overflow: hidden;
+        }
+
+        /* Sidebar */
         .sidebar {
             width: 72px;
-            background-color: var(--sidebar-bg);
+            background: var(--sidebar-bg);
             border-right: 1px solid var(--border-color);
             display: flex;
             flex-direction: column;
             padding: 20px 0;
-            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
+            transition: width 0.3s ease;
             overflow: hidden;
-            z-index: 100;
+            z-index: 50;
         }
 
-        .sidebar:hover { width: 240px; box-shadow: 10px 0 30px rgba(0,0,0,0.05); }
+        .sidebar:hover { width: 240px; }
 
         .nav-item {
             display: flex;
             align-items: center;
-            padding: 14px 24px;
+            padding: 12px 24px;
             color: var(--secondary-text);
             cursor: pointer;
             white-space: nowrap;
             transition: 0.2s;
             text-decoration: none;
+            border: none;
+            background: none;
+            width: 100%;
+            font-size: 14px;
         }
 
-        .nav-item:hover { background: rgba(26, 115, 232, 0.1); color: var(--accent); }
-        .nav-item svg { width: 24px; height: 24px; min-width: 24px; margin-right: 20px; stroke: currentColor; fill: none; stroke-width: 2; }
+        .nav-item:hover { background: rgba(26,115,232,0.1); color: var(--accent); }
+        .nav-item svg { width: 20px; height: 20px; min-width: 20px; margin-right: 16px; stroke: currentColor; fill: none; stroke-width: 2; }
         .nav-text { opacity: 0; transition: 0.3s; font-weight: 500; }
         .sidebar:hover .nav-text { opacity: 1; }
 
-        /* --- MAIN CONTENT --- */
-        .main-content { flex: 1; padding: 40px; overflow-y: auto; position: relative; }
-        
-        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
-        
-        .controls {
-            background: var(--card-bg);
-            padding: 15px;
-            border-radius: var(--radius);
-            border: 1px solid var(--border-color);
-            display: flex;
-            gap: 10px;
-            box-shadow: var(--shadow);
-        }
-
-        input {
-            padding: 12px 18px;
-            border-radius: 25px;
-            border: 1px solid var(--border-color);
-            background: var(--bg-color);
-            color: var(--text-color);
-            outline: none;
+        /* Browser Content */
+        .browser-content {
             flex: 1;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
         }
 
-        button.btn-primary {
-            background: var(--accent);
-            color: white;
-            border: none;
-            padding: 10px 24px;
-            border-radius: 25px;
-            cursor: pointer;
-            font-weight: 600;
+        /* Search/Start Page */
+        .start-page {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 40px;
+            gap: 30px;
         }
 
-        /* --- GRID --- */
-        .grid {
-            display: grid;
-            grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
-            gap: 20px;
+        .search-logo {
+            font-size: 48px;
+            font-weight: 700;
+            background: linear-gradient(135deg, #4285f4, #34a853, #fbbc05, #ea4335);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 20px;
         }
 
-        .card {
+        .big-search-box {
+            width: 100%;
+            max-width: 600px;
             background: var(--card-bg);
             border: 1px solid var(--border-color);
-            border-radius: var(--radius);
-            padding: 20px;
-            text-align: center;
-            text-decoration: none;
+            border-radius: 24px;
+            padding: 12px 20px;
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            box-shadow: var(--shadow);
+            transition: 0.2s;
+        }
+
+        .big-search-box:focus-within {
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+
+        .big-search-box input {
+            flex: 1;
+            border: none;
+            background: transparent;
             color: var(--text-color);
-            transition: 0.3s;
+            font-size: 16px;
+            outline: none;
+        }
+
+        /* WebView Container */
+        .webview-container {
+            flex: 1;
+            display: none;
             position: relative;
         }
 
-        .card:hover { transform: translateY(-5px); box-shadow: 0 10px 20px rgba(0,0,0,0.1); }
-        
-        .card-icon {
-            width: 50px; height: 50px; background: var(--bg-color);
-            border-radius: 50%; display: flex; align-items: center;
-            justify-content: center; margin: 0 auto 10px; font-size: 20px;
+        .webview-container.active { display: block; }
+
+        .webview-iframe {
+            width: 100%;
+            height: 100%;
+            border: none;
+            background: white;
+        }
+
+        /* Shortcuts Grid */
+        .shortcuts-section {
+            width: 100%;
+            max-width: 800px;
+            margin-top: 40px;
+        }
+
+        .shortcuts-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            padding: 0 10px;
+        }
+
+        .shortcuts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(120px, 1fr));
+            gap: 16px;
+        }
+
+        .shortcut-card {
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 16px;
+            text-align: center;
+            cursor: pointer;
+            transition: 0.2s;
+            position: relative;
+        }
+
+        .shortcut-card:hover {
+            transform: translateY(-2px);
+            box-shadow: var(--shadow);
+        }
+
+        .shortcut-icon {
+            width: 48px;
+            height: 48px;
+            background: var(--bg-color);
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 8px;
+            font-size: 20px;
             border: 1px solid var(--border-color);
         }
 
-        /* Delete button on cards */
-        .delete-btn {
+        .shortcut-title {
+            font-size: 12px;
+            font-weight: 500;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+        }
+
+        .shortcut-delete {
             position: absolute;
-            top: 8px;
-            right: 8px;
-            width: 24px;
-            height: 24px;
+            top: 4px;
+            right: 4px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
             background: var(--danger);
             color: white;
             border: none;
             cursor: pointer;
-            font-size: 14px;
+            font-size: 12px;
             display: flex;
             align-items: center;
             justify-content: center;
             opacity: 0;
-            transition: opacity 0.2s;
+            transition: 0.2s;
         }
 
-        .card:hover .delete-btn {
-            opacity: 1;
+        .shortcut-card:hover .shortcut-delete { opacity: 1; }
+
+        /* Add Shortcut Card */
+        .add-shortcut {
+            border: 2px dashed var(--border-color);
+            background: transparent;
         }
 
-        .delete-btn:hover {
-            transform: scale(1.1);
+        .add-shortcut:hover { border-color: var(--accent); background: rgba(26,115,232,0.05); }
+
+        /* Modal */
+        .modal-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.5);
+            display: none;
+            align-items: center;
+            justify-content: center;
+            z-index: 2000;
         }
+
+        .modal-overlay.active { display: flex; }
+
+        .modal {
+            background: var(--card-bg);
+            border-radius: 16px;
+            padding: 24px;
+            width: 90%;
+            max-width: 400px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.2);
+        }
+
+        .modal h3 { margin-bottom: 16px; }
+
+        .modal-input {
+            width: 100%;
+            padding: 12px 16px;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            margin-bottom: 12px;
+            font-size: 14px;
+        }
+
+        .modal-buttons {
+            display: flex;
+            gap: 8px;
+            justify-content: flex-end;
+            margin-top: 16px;
+        }
+
+        .btn {
+            padding: 8px 20px;
+            border-radius: 6px;
+            border: none;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: 0.2s;
+        }
+
+        .btn-primary { background: var(--accent); color: white; }
+        .btn-primary:hover { background: #1557b0; }
+        .btn-secondary { background: transparent; color: var(--secondary-text); }
+        .btn-secondary:hover { background: rgba(128,128,128,0.1); }
 
         /* --- AI FLOATING WIDGET --- */
         .ai-fab {
-            position: fixed; bottom: 30px; right: 30px;
-            width: 60px; height: 60px; border-radius: 50%;
+            position: fixed;
+            bottom: 30px;
+            right: 30px;
+            width: 56px;
+            height: 56px;
+            border-radius: 50%;
             background: linear-gradient(135deg, #C5A059, #8E6E37);
-            border: none; cursor: pointer; color: white;
-            box-shadow: 0 8px 24px rgba(197, 160, 89, 0.4);
-            display: flex; align-items: center; justify-content: center;
-            z-index: 1000; transition: 0.3s;
+            border: none;
+            cursor: pointer;
+            color: white;
+            box-shadow: 0 4px 16px rgba(197,160,89,0.4);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 1000;
+            transition: 0.3s;
         }
 
         .ai-fab:hover { transform: scale(1.1) rotate(5deg); }
 
         .ai-window {
-            position: fixed; bottom: 100px; right: 30px;
-            width: 380px; height: 550px; background: var(--card-bg);
-            border: 1px solid var(--border-color); border-radius: 24px;
+            position: fixed;
+            bottom: 100px;
+            right: 30px;
+            width: 360px;
+            height: 500px;
+            background: var(--card-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
             box-shadow: 0 20px 40px rgba(0,0,0,0.2);
-            display: none; flex-direction: column; overflow: hidden; z-index: 1000;
+            display: none;
+            flex-direction: column;
+            overflow: hidden;
+            z-index: 1000;
         }
 
         .ai-window.active { display: flex; animation: slideUp 0.3s ease; }
 
-        .ai-header { background: #C5A059; color: white; padding: 20px; font-weight: bold; display: flex; justify-content: space-between; }
+        .ai-header {
+            background: linear-gradient(135deg, #C5A059, #8E6E37);
+            color: white;
+            padding: 16px 20px;
+            font-weight: 600;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
 
-        .chat-area { flex: 1; padding: 15px; overflow-y: auto; display: flex; flex-direction: column; gap: 10px; }
-        
-        .bubble { padding: 10px 15px; border-radius: 15px; max-width: 80%; font-size: 14px; line-height: 1.4; }
+        .chat-area {
+            flex: 1;
+            padding: 16px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .bubble {
+            padding: 10px 14px;
+            border-radius: 12px;
+            max-width: 85%;
+            font-size: 13px;
+            line-height: 1.4;
+            word-wrap: break-word;
+        }
+
         .bubble.user { background: var(--accent); color: white; align-self: flex-end; }
         .bubble.ai { background: var(--bg-color); border: 1px solid var(--border-color); align-self: flex-start; }
 
-        .ai-input-area { padding: 15px; border-top: 1px solid var(--border-color); display: flex; gap: 8px; }
+        .ai-input-area {
+            padding: 12px 16px;
+            border-top: 1px solid var(--border-color);
+            display: flex;
+            gap: 8px;
+        }
 
-        /* API Key warning */
+        .ai-input-area input {
+            flex: 1;
+            padding: 10px 14px;
+            border: 1px solid var(--border-color);
+            border-radius: 20px;
+            background: var(--bg-color);
+            color: var(--text-color);
+            outline: none;
+            font-size: 13px;
+        }
+
+        .ai-send-btn {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            background: var(--accent);
+            color: white;
+            border: none;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: 0.2s;
+        }
+
+        .ai-send-btn:hover { background: #1557b0; }
+
         .api-warning {
             background: #fff3cd;
             color: #856404;
@@ -214,62 +642,202 @@
             border-color: #5d5a3a;
         }
 
-        /* Loader */
-        .spinner { width: 20px; height: 20px; border: 3px solid rgba(255,255,255,0.3); border-top-color: #fff; border-radius: 50%; animation: spin 1s infinite linear; }
+        .spinner {
+            width: 16px;
+            height: 16px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-top-color: #fff;
+            border-radius: 50%;
+            animation: spin 1s infinite linear;
+        }
+
         @keyframes spin { to { transform: rotate(360deg); } }
         @keyframes slideUp { from { transform: translateY(20px); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
 
+        /* Loading indicator for iframe */
+        .loading-indicator {
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            display: none;
+        }
+
+        .loading-indicator.active { display: block; }
     </style>
+<base target="_blank">
 </head>
 <body>
 
-    <aside class="sidebar">
-        <div style="padding: 20px 24px; color: var(--accent);">
-            <svg viewBox="0 0 24 24"><path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"/></svg>
-        </div>
-        <a href="#" class="nav-item">
-            <svg viewBox="0 0 24 24"><rect x="3" y="3" width="7" height="7"></rect><rect x="14" y="3" width="7" height="7"></rect><rect x="14" y="14" width="7" height="7"></rect><rect x="3" y="14" width="7" height="7"></rect></svg>
-            <span class="nav-text">Dashboard</span>
-        </a>
-        <a href="#" class="nav-item">
-            <svg viewBox="0 0 24 24"><path d="M12 20h9"></path><path d="M16.5 3.5a2.121 2.121 0 0 1 3 3L7 19l-4 1 1-4L16.5 3.5z"></path></svg>
-            <span class="nav-text">Notes</span>
-        </a>
-        <a href="#" class="nav-item" id="themeToggle">
-            <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"></circle><line x1="12" y1="1" x2="12" y2="3"></line><line x1="12" y1="21" x2="12" y2="23"></line><line x1="4.22" y1="4.22" x2="5.64" y2="5.64"></line><line x1="18.36" y1="18.36" x2="19.78" y2="19.78"></line><line x1="1" y1="12" x2="3" y2="12"></line><line x1="21" y1="12" x2="23" y2="12"></line></svg>
-            <span class="nav-text">Appearance</span>
-        </a>
-    </aside>
-
-    <main class="main-content">
-        <div class="header">
-            <h1>My Shortcuts</h1>
-            <div class="controls">
-                <input type="text" id="siteName" placeholder="Site Name">
-                <input type="text" id="siteUrl" placeholder="URL">
-                <button class="btn-primary" id="addCardBtn">Add</button>
+    <!-- Chrome Toolbar -->
+    <div class="chrome-toolbar">
+        <!-- Tabs -->
+        <div class="tabs-container" id="tabsContainer">
+            <div class="tab active" data-tab-id="1">
+                <div class="tab-favicon">N</div>
+                <span class="tab-title">New Tab</span>
+                <span class="tab-close">×</span>
             </div>
+            <div class="new-tab-btn" id="newTabBtn">+</div>
         </div>
 
-        <div class="grid" id="grid">
+        <!-- Navigation Bar -->
+        <div class="nav-bar">
+            <div class="nav-controls">
+                <button class="nav-btn" id="backBtn" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M15 18l-6-6 6-6"/>
+                    </svg>
+                </button>
+                <button class="nav-btn" id="forwardBtn" disabled>
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M9 18l6-6-6-6"/>
+                    </svg>
+                </button>
+                <button class="nav-btn" id="refreshBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M23 4v6h-6M1 20v-6h6M3.51 9a9 9 0 0 1 14.85-3.36L23 10M1 14l4.64 4.36A9 9 0 0 0 20.49 15"/>
+                    </svg>
+                </button>
+                <button class="nav-btn" id="homeBtn">
+                    <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                        <path d="M3 9l9-7 9 7v11a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2z"/>
+                        <polyline points="9 22 9 12 15 12 15 22"/>
+                    </svg>
+                </button>
             </div>
-    </main>
 
+            <div class="address-container" id="addressContainer">
+                <svg class="address-icon" id="addressIcon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="12" r="10"/>
+                    <line x1="2" y1="12" x2="22" y2="12"/>
+                    <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
+                </svg>
+                <input type="text" class="address-bar" id="addressBar" placeholder="Search Google or type a URL">
+
+                <!-- Search Engine Dropdown -->
+                <div class="search-engine-dropdown" id="searchDropdown">
+                    <div class="search-option active" data-engine="google">
+                        <div class="search-icon google-icon">G</div>
+                        <span>Google Search</span>
+                    </div>
+                    <div class="search-option" data-engine="duckduckgo">
+                        <div class="search-icon duck-icon">D</div>
+                        <span>DuckDuckGo</span>
+                    </div>
+                    <div class="search-option" data-engine="bing">
+                        <div class="search-icon bing-icon">B</div>
+                        <span>Bing</span>
+                    </div>
+                </div>
+            </div>
+
+            <button class="nav-btn" id="menuBtn">
+                <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <circle cx="12" cy="5" r="1"/>
+                    <circle cx="12" cy="12" r="1"/>
+                    <circle cx="12" cy="19" r="1"/>
+                </svg>
+            </button>
+        </div>
+    </div>
+
+    <!-- Main Container -->
+    <div class="main-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <button class="nav-item" id="bookmarksBtn">
+                <svg viewBox="0 0 24 24"><path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"/></svg>
+                <span class="nav-text">Bookmarks</span>
+            </button>
+            <button class="nav-item" id="historyBtn">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                <span class="nav-text">History</span>
+            </button>
+            <button class="nav-item" id="downloadsBtn">
+                <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+                <span class="nav-text">Downloads</span>
+            </button>
+            <button class="nav-item" id="themeToggle">
+                <svg viewBox="0 0 24 24"><circle cx="12" cy="12" r="5"/><line x1="12" y1="1" x2="12" y2="3"/><line x1="12" y1="21" x2="12" y2="23"/></svg>
+                <span class="nav-text">Appearance</span>
+            </button>
+        </aside>
+
+        <!-- Browser Content -->
+        <div class="browser-content">
+            <!-- Start Page -->
+            <div class="start-page" id="startPage">
+                <div class="search-logo" id="searchLogo">Google</div>
+
+                <div class="big-search-box">
+                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="var(--secondary-text)" stroke-width="2">
+                        <circle cx="11" cy="11" r="8"/>
+                        <path d="M21 21l-4.35-4.35"/>
+                    </svg>
+                    <input type="text" id="bigSearchInput" placeholder="Search the web...">
+                </div>
+
+                <div class="shortcuts-section">
+                    <div class="shortcuts-header">
+                        <h3>Shortcuts</h3>
+                    </div>
+                    <div class="shortcuts-grid" id="shortcutsGrid">
+                        <div class="shortcut-card add-shortcut" id="addShortcutBtn">
+                            <div class="shortcut-icon" style="background: transparent; border: 2px dashed var(--border-color);">+</div>
+                            <div class="shortcut-title">Add shortcut</div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- WebView Container -->
+            <div class="webview-container" id="webviewContainer">
+                <div class="loading-indicator" id="loadingIndicator">
+                    <div class="spinner" style="border-color: var(--border-color); border-top-color: var(--accent);"></div>
+                </div>
+                <iframe class="webview-iframe" id="webviewFrame" sandbox="allow-scripts allow-same-origin allow-forms allow-popups"></iframe>
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Shortcut Modal -->
+    <div class="modal-overlay" id="modalOverlay">
+        <div class="modal">
+            <h3>Add Shortcut</h3>
+            <input type="text" class="modal-input" id="shortcutName" placeholder="Name (e.g., YouTube)">
+            <input type="text" class="modal-input" id="shortcutUrl" placeholder="URL (e.g., youtube.com)">
+            <div class="modal-buttons">
+                <button class="btn btn-secondary" id="cancelModal">Cancel</button>
+                <button class="btn btn-primary" id="saveShortcut">Save</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- AI Floating Button -->
     <button class="ai-fab" id="aiFab">
-        <svg width="28" height="28" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path></svg>
+        <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+        </svg>
     </button>
 
+    <!-- AI Chat Window -->
     <div class="ai-window" id="aiWindow">
         <div class="ai-header">
             <span>Ona AI</span>
             <span style="cursor:pointer" id="closeAi">×</span>
         </div>
         <div class="chat-area" id="chatArea">
-            <div class="bubble ai">Hi! I'm Ona. How can I help you with your dashboard today?</div>
+            <div class="bubble ai">Hi! I'm Ona. I can help you browse the web or answer questions. What would you like to know?</div>
         </div>
         <div class="ai-input-area">
-            <input type="text" id="aiInput" placeholder="Ask AI...">
-            <button class="btn-primary" id="aiSend">Send</button>
+            <input type="text" id="aiInput" placeholder="Ask me anything...">
+            <button class="ai-send-btn" id="aiSend">
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                    <line x1="22" y1="2" x2="11" y2="13"/>
+                    <polygon points="22 2 15 22 11 13 2 9 22 2"/>
+                </svg>
+            </button>
         </div>
     </div>
 
@@ -277,8 +845,35 @@
         // --- CONFIGURATION ---
         const API_BASE = "https://api.x.ai/v1";
         let XAI_API_KEY = "";
+        let currentSearchEngine = 'google';
+        let tabCounter = 1;
+        let currentTabId = 1;
+        let navigationHistory = {};
+        let historyIndex = {};
 
-        // --- FIREBASE INITIALIZATION (Same as Ona AI Chat App) ---
+        // Search Engine URLs
+        const searchEngines = {
+            google: { 
+                name: 'Google', 
+                searchUrl: 'https://www.google.com/search?q=',
+                logo: 'Google',
+                color: 'linear-gradient(135deg, #4285f4, #34a853, #fbbc05, #ea4335)'
+            },
+            duckduckgo: { 
+                name: 'DuckDuckGo', 
+                searchUrl: 'https://duckduckgo.com/?q=',
+                logo: 'DuckDuckGo',
+                color: 'linear-gradient(135deg, #de5833, #d64a22)'
+            },
+            bing: { 
+                name: 'Bing', 
+                searchUrl: 'https://www.bing.com/search?q=',
+                logo: 'Bing',
+                color: 'linear-gradient(135deg, #008373, #0078d4)'
+            }
+        };
+
+        // --- FIREBASE INITIALIZATION ---
         const firebaseConfig = {
             apiKey: "AIzaSyCh7Ute6LeSAxcNDEQwZg5m0cA4ujnLCfg",
             authDomain: "test-17881.firebaseapp.com",
@@ -290,34 +885,26 @@
         firebase.initializeApp(firebaseConfig);
         const db = firebase.database();
         const remoteConfig = firebase.remoteConfig();
-        
-        // Same settings as Ona AI chat app
         remoteConfig.settings.minimumFetchIntervalMillis = 0;
 
-        // Load API Key from Firebase Remote Config (Same pattern as Ona AI)
+        // Load API Key from Firebase Remote Config
         async function loadKey() {
             try {
                 await remoteConfig.fetchAndActivate();
                 XAI_API_KEY = remoteConfig.getValue('xai_api_key').asString();
-                
                 if (!XAI_API_KEY) {
                     console.warn("xAI API key not found in Remote Config");
                     showApiWarning("AI not configured. Add 'xai_api_key' to Firebase Remote Config.");
-                } else {
-                    console.log("xAI API key loaded successfully");
                 }
             } catch (e) { 
                 console.error("Key Load Error", e);
                 showApiWarning("Failed to load AI configuration from Firebase.");
             }
         }
-        
-        // Load key immediately
         loadKey();
 
         function showApiWarning(message) {
             const chatArea = document.getElementById('chatArea');
-            // Only add warning if not already present
             if (!document.querySelector('.api-warning')) {
                 const warningDiv = document.createElement('div');
                 warningDiv.className = 'api-warning';
@@ -326,97 +913,342 @@
             }
         }
 
-        // --- DASHBOARD LOGIC ---
-        const grid = document.getElementById('grid');
-        
-        // Render cards with delete buttons
-        db.ref('shortcuts').on('value', snap => {
-            grid.innerHTML = '';
-            const data = snap.val();
-            if (data) {
-                Object.keys(data).forEach(key => {
-                    const item = data[key];
-                    
-                    // Create card container
-                    const cardContainer = document.createElement('div');
-                    cardContainer.className = 'card';
-                    
-                    // Delete button
-                    const deleteBtn = document.createElement('button');
-                    deleteBtn.className = 'delete-btn';
-                    deleteBtn.innerHTML = '×';
-                    deleteBtn.title = 'Delete shortcut';
-                    deleteBtn.onclick = (e) => {
-                        e.preventDefault();
-                        e.stopPropagation();
-                        if (confirm(`Delete "${item.name}"?`)) {
-                            db.ref('shortcuts/' + key).remove()
-                                .then(() => console.log('Deleted:', key))
-                                .catch(err => console.error('Delete error:', err));
-                        }
-                    };
-                    
-                    // Card content (clickable link area)
-                    const cardLink = document.createElement('a');
-                    cardLink.href = item.url;
-                    cardLink.target = "_blank";
-                    cardLink.style.textDecoration = 'none';
-                    cardLink.style.color = 'inherit';
-                    cardLink.style.display = 'block';
-                    cardLink.innerHTML = `
-                        <div class="card-icon">${item.name[0].toUpperCase()}</div>
-                        <div style="font-weight:600">${item.name}</div>
-                    `;
-                    
-                    cardContainer.appendChild(deleteBtn);
-                    cardContainer.appendChild(cardLink);
-                    grid.appendChild(cardContainer);
-                });
+        // --- TAB MANAGEMENT ---
+        function createTab(url = null, title = 'New Tab') {
+            tabCounter++;
+            const tabId = tabCounter;
+
+            const tab = document.createElement('div');
+            tab.className = 'tab';
+            tab.dataset.tabId = tabId;
+            tab.innerHTML = `
+                <div class="tab-favicon">${title[0].toUpperCase()}</div>
+                <span class="tab-title">${title}</span>
+                <span class="tab-close">×</span>
+            `;
+
+            tab.addEventListener('click', (e) => {
+                if (e.target.classList.contains('tab-close')) {
+                    closeTab(tabId);
+                } else {
+                    switchTab(tabId);
+                }
+            });
+
+            document.getElementById('tabsContainer').insertBefore(tab, document.getElementById('newTabBtn'));
+
+            navigationHistory[tabId] = url ? [url] : [];
+            historyIndex[tabId] = url ? 0 : -1;
+
+            switchTab(tabId);
+
+            if (url) {
+                navigateTo(url, title);
+            }
+
+            return tabId;
+        }
+
+        function closeTab(tabId) {
+            const tab = document.querySelector(`.tab[data-tab-id="${tabId}"]`);
+            if (tab) {
+                const tabs = document.querySelectorAll('.tab');
+                if (tabs.length > 1) {
+                    tab.remove();
+                    delete navigationHistory[tabId];
+                    delete historyIndex[tabId];
+
+                    const remainingTabs = document.querySelectorAll('.tab');
+                    if (remainingTabs.length > 0) {
+                        switchTab(remainingTabs[remainingTabs.length - 1].dataset.tabId);
+                    }
+                }
+            }
+        }
+
+        function switchTab(tabId) {
+            document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+            const tab = document.querySelector(`.tab[data-tab-id="${tabId}"]`);
+            if (tab) {
+                tab.classList.add('active');
+                currentTabId = tabId;
+                updateNavigationButtons();
+            }
+        }
+
+        function updateTabTitle(title, favicon = null) {
+            const tab = document.querySelector(`.tab[data-tab-id="${currentTabId}"]`);
+            if (tab) {
+                tab.querySelector('.tab-title').textContent = title;
+                if (favicon) {
+                    tab.querySelector('.tab-favicon').textContent = favicon;
+                }
+            }
+        }
+
+        document.getElementById('newTabBtn').addEventListener('click', () => createTab());
+
+        // --- NAVIGATION ---
+        function navigateTo(url, title = null) {
+            const startPage = document.getElementById('startPage');
+            const webviewContainer = document.getElementById('webviewContainer');
+            const webviewFrame = document.getElementById('webviewFrame');
+            const addressBar = document.getElementById('addressBar');
+
+            // Show loading
+            document.getElementById('loadingIndicator').classList.add('active');
+
+            // Update UI
+            startPage.style.display = 'none';
+            webviewContainer.classList.add('active');
+            addressBar.value = url;
+
+            // Update history
+            if (!navigationHistory[currentTabId]) {
+                navigationHistory[currentTabId] = [];
+                historyIndex[currentTabId] = -1;
+            }
+
+            // Remove forward history if navigating from middle
+            if (historyIndex[currentTabId] < navigationHistory[currentTabId].length - 1) {
+                navigationHistory[currentTabId] = navigationHistory[currentTabId].slice(0, historyIndex[currentTabId] + 1);
+            }
+
+            navigationHistory[currentTabId].push(url);
+            historyIndex[currentTabId]++;
+
+            updateNavigationButtons();
+
+            // Load content
+            webviewFrame.src = url;
+
+            // Update tab title
+            if (title) {
+                updateTabTitle(title);
+            } else {
+                try {
+                    const urlObj = new URL(url);
+                    updateTabTitle(urlObj.hostname.replace('www.', ''));
+                } catch {
+                    updateTabTitle('Loading...');
+                }
+            }
+
+            // Hide loading after iframe loads
+            webviewFrame.onload = () => {
+                document.getElementById('loadingIndicator').classList.remove('active');
+            };
+        }
+
+        function goBack() {
+            if (historyIndex[currentTabId] > 0) {
+                historyIndex[currentTabId]--;
+                const url = navigationHistory[currentTabId][historyIndex[currentTabId]];
+                document.getElementById('webviewFrame').src = url;
+                document.getElementById('addressBar').value = url;
+                updateNavigationButtons();
+            }
+        }
+
+        function goForward() {
+            if (historyIndex[currentTabId] < navigationHistory[currentTabId].length - 1) {
+                historyIndex[currentTabId]++;
+                const url = navigationHistory[currentTabId][historyIndex[currentTabId]];
+                document.getElementById('webviewFrame').src = url;
+                document.getElementById('addressBar').value = url;
+                updateNavigationButtons();
+            }
+        }
+
+        function refresh() {
+            const frame = document.getElementById('webviewFrame');
+            if (frame.src) {
+                frame.src = frame.src;
+            }
+        }
+
+        function goHome() {
+            document.getElementById('startPage').style.display = 'flex';
+            document.getElementById('webviewContainer').classList.remove('active');
+            document.getElementById('addressBar').value = '';
+            updateTabTitle('New Tab');
+        }
+
+        function updateNavigationButtons() {
+            const backBtn = document.getElementById('backBtn');
+            const forwardBtn = document.getElementById('forwardBtn');
+
+            const history = navigationHistory[currentTabId] || [];
+            const index = historyIndex[currentTabId] || -1;
+
+            backBtn.disabled = index <= 0;
+            forwardBtn.disabled = index >= history.length - 1;
+        }
+
+        document.getElementById('backBtn').addEventListener('click', goBack);
+        document.getElementById('forwardBtn').addEventListener('click', goForward);
+        document.getElementById('refreshBtn').addEventListener('click', refresh);
+        document.getElementById('homeBtn').addEventListener('click', goHome);
+
+        // --- SEARCH FUNCTIONALITY ---
+        function performSearch(query, engine = currentSearchEngine) {
+            if (!query.trim()) return;
+
+            const engineConfig = searchEngines[engine];
+            let url;
+
+            // Check if it's a URL or search query
+            if (query.includes('.') && !query.includes(' ')) {
+                // It's likely a URL
+                url = query.startsWith('http') ? query : 'https://' + query;
+            } else {
+                // It's a search query
+                url = engineConfig.searchUrl + encodeURIComponent(query);
+            }
+
+            navigateTo(url, query);
+        }
+
+        // Address bar search
+        document.getElementById('addressBar').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performSearch(e.target.value);
             }
         });
 
-        document.getElementById('addCardBtn').onclick = () => {
-            const name = document.getElementById('siteName').value.trim();
-            const url = document.getElementById('siteUrl').value.trim();
-            if(name && url) {
-                const formattedUrl = url.includes('://') ? url : 'https://'+url;
-                db.ref('shortcuts').push({ name, url: formattedUrl })
-                    .then(() => {
-                        document.getElementById('siteName').value = '';
-                        document.getElementById('siteUrl').value = '';
-                    })
-                    .catch(err => alert('Error adding shortcut: ' + err.message));
-            } else {
-                alert('Please enter both name and URL');
+        // Big search box on start page
+        document.getElementById('bigSearchInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') {
+                performSearch(e.target.value);
             }
-        };
+        });
 
-        // --- AI CHAT LOGIC ---
+        // --- SEARCH ENGINE DROPDOWN ---
+        const addressContainer = document.getElementById('addressContainer');
+        const searchDropdown = document.getElementById('searchDropdown');
+        const addressIcon = document.getElementById('addressIcon');
+
+        addressContainer.addEventListener('click', (e) => {
+            if (e.target === addressContainer || e.target.classList.contains('address-icon')) {
+                searchDropdown.classList.toggle('active');
+            }
+        });
+
+        document.querySelectorAll('.search-option').forEach(option => {
+            option.addEventListener('click', () => {
+                document.querySelectorAll('.search-option').forEach(o => o.classList.remove('active'));
+                option.classList.add('active');
+                currentSearchEngine = option.dataset.engine;
+
+                const engine = searchEngines[currentSearchEngine];
+                document.getElementById('searchLogo').textContent = engine.logo;
+                document.getElementById('searchLogo').style.background = engine.color;
+                document.getElementById('searchLogo').style.webkitBackgroundClip = 'text';
+                document.getElementById('searchLogo').style.webkitTextFillColor = 'transparent';
+                document.getElementById('addressBar').placeholder = `Search ${engine.name} or type a URL`;
+
+                searchDropdown.classList.remove('active');
+            });
+        });
+
+        // Close dropdown when clicking outside
+        document.addEventListener('click', (e) => {
+            if (!addressContainer.contains(e.target)) {
+                searchDropdown.classList.remove('active');
+            }
+        });
+
+        // --- SHORTCUTS ---
+        function renderShortcuts() {
+            const grid = document.getElementById('shortcutsGrid');
+            // Keep the add button
+            const addBtn = grid.querySelector('.add-shortcut');
+            grid.innerHTML = '';
+            grid.appendChild(addBtn);
+
+            db.ref('shortcuts').once('value', snap => {
+                const data = snap.val();
+                if (data) {
+                    Object.keys(data).forEach(key => {
+                        const item = data[key];
+                        const card = document.createElement('div');
+                        card.className = 'shortcut-card';
+                        card.innerHTML = `
+                            <button class="shortcut-delete" data-key="${key}">×</button>
+                            <div class="shortcut-icon">${item.name[0].toUpperCase()}</div>
+                            <div class="shortcut-title">${item.name}</div>
+                        `;
+
+                        card.addEventListener('click', (e) => {
+                            if (e.target.classList.contains('shortcut-delete')) {
+                                e.stopPropagation();
+                                if (confirm(`Delete "${item.name}"?`)) {
+                                    db.ref('shortcuts/' + key).remove();
+                                }
+                            } else {
+                                navigateTo(item.url, item.name);
+                            }
+                        });
+
+                        grid.insertBefore(card, addBtn);
+                    });
+                }
+            });
+        }
+
+        // Real-time updates
+        db.ref('shortcuts').on('value', () => renderShortcuts());
+
+        // Modal handling
+        const modalOverlay = document.getElementById('modalOverlay');
+        document.getElementById('addShortcutBtn').addEventListener('click', () => {
+            modalOverlay.classList.add('active');
+        });
+
+        document.getElementById('cancelModal').addEventListener('click', () => {
+            modalOverlay.classList.remove('active');
+            document.getElementById('shortcutName').value = '';
+            document.getElementById('shortcutUrl').value = '';
+        });
+
+        document.getElementById('saveShortcut').addEventListener('click', () => {
+            const name = document.getElementById('shortcutName').value.trim();
+            let url = document.getElementById('shortcutUrl').value.trim();
+
+            if (name && url) {
+                if (!url.startsWith('http')) {
+                    url = 'https://' + url;
+                }
+                db.ref('shortcuts').push({ name, url })
+                    .then(() => {
+                        modalOverlay.classList.remove('active');
+                        document.getElementById('shortcutName').value = '';
+                        document.getElementById('shortcutUrl').value = '';
+                    })
+                    .catch(err => alert('Error: ' + err.message));
+            }
+        });
+
+        // --- AI CHAT ---
         const aiFab = document.getElementById('aiFab');
         const aiWindow = document.getElementById('aiWindow');
-        const aiSend = document.getElementById('aiSend');
-        const aiInput = document.getElementById('aiInput');
-        const chatArea = document.getElementById('chatArea');
 
-        aiFab.onclick = () => aiWindow.classList.toggle('active');
-        document.getElementById('closeAi').onclick = () => aiWindow.classList.remove('active');
+        aiFab.addEventListener('click', () => aiWindow.classList.toggle('active'));
+        document.getElementById('closeAi').addEventListener('click', () => aiWindow.classList.remove('active'));
 
         async function handleAiChat() {
-            const text = aiInput.value.trim();
-            
-            if (!text) {
-                return;
-            }
-            
+            const input = document.getElementById('aiInput');
+            const text = input.value.trim();
+
+            if (!text) return;
             if (!XAI_API_KEY) {
-                appendMsg("AI is not configured. Please check that 'xai_api_key' is set in Firebase Remote Config.", 'ai');
+                appendMsg("AI is not configured. Please check Firebase Remote Config.", 'ai');
                 return;
             }
 
             appendMsg(text, 'user');
-            aiInput.value = '';
+            input.value = '';
 
-            // Show Thinking
             const thinking = appendMsg('<div class="spinner"></div>', 'ai');
 
             try {
@@ -429,19 +1261,17 @@
                     body: JSON.stringify({
                         model: "grok-4-1-fast-non-reasoning",
                         messages: [
-                            { role: "system", content: "You are Ona AI on a user dashboard." }, 
+                            { role: "system", content: "You are Ona AI, a helpful browser assistant. You can help users search the web, navigate to websites, or answer questions." }, 
                             { role: "user", content: text }
                         ]
                     })
                 });
 
-                if (!response.ok) {
-                    throw new Error(`HTTP error! status: ${response.status}`);
-                }
+                if (!response.ok) throw new Error(`HTTP error! status: ${response.status}`);
 
                 const result = await response.json();
                 thinking.remove();
-                
+
                 if (result.choices && result.choices[0] && result.choices[0].message) {
                     appendMsg(result.choices[0].message.content, 'ai');
                 } else {
@@ -449,7 +1279,6 @@
                 }
             } catch (e) {
                 thinking.remove();
-                console.error("AI API Error:", e);
                 appendMsg("Error: " + (e.message || "Failed to connect to AI service."), 'ai');
             }
         }
@@ -458,19 +1287,42 @@
             const div = document.createElement('div');
             div.className = `bubble ${side}`;
             div.innerHTML = content;
+            const chatArea = document.getElementById('chatArea');
             chatArea.appendChild(div);
             chatArea.scrollTop = chatArea.scrollHeight;
             return div;
         }
 
-        aiSend.onclick = handleAiChat;
-        aiInput.onkeypress = (e) => { if(e.key === 'Enter') handleAiChat(); };
+        document.getElementById('aiSend').addEventListener('click', handleAiChat);
+        document.getElementById('aiInput').addEventListener('keypress', (e) => {
+            if (e.key === 'Enter') handleAiChat();
+        });
 
-        // Theme Toggle
-        document.getElementById('themeToggle').onclick = () => {
+        // --- THEME TOGGLE ---
+        document.getElementById('themeToggle').addEventListener('click', () => {
             const isDark = document.body.hasAttribute('data-theme');
-            isDark ? document.body.removeAttribute('data-theme') : document.body.setAttribute('data-theme', 'dark');
-        };
+            if (isDark) {
+                document.body.removeAttribute('data-theme');
+            } else {
+                document.body.setAttribute('data-theme', 'dark');
+            }
+        });
+
+        // --- SIDEBAR BUTTONS ---
+        document.getElementById('bookmarksBtn').addEventListener('click', () => {
+            alert('Bookmarks feature - integrate with your bookmark system');
+        });
+
+        document.getElementById('historyBtn').addEventListener('click', () => {
+            alert('History feature - shows recent browsing history');
+        });
+
+        document.getElementById('downloadsBtn').addEventListener('click', () => {
+            alert('Downloads feature - manage downloaded files');
+        });
+
+        // Initialize
+        renderShortcuts();
     </script>
 </body>
 </html>
